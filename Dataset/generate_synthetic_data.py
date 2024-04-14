@@ -215,15 +215,15 @@ def create_texture(final_width, final_height, patch_size, overlap,color_maps):
 
 def generate_crack_path(width, height, max_step=1, stability_span=200):
     x = np.arange(width)
-    y_start = np.random.choice([height//16,height//8,height//4])
+    y_start = np.random.choice([height//32,height//16,height//8,height//4])
     #print(y_start)
     y = np.full(width, np.random.randint(y_start, height))
     
     # Smoothness parameters
-    max_step = np.random.choice([1,5,10],p=[0.7,0.28,0.02])
+    max_step = np.random.choice([1,4,10],p=[0.7,0.28,0.02])
     smoothness = max_step * 20  # The higher, the smoother the crack
     curve_variation = stability_span  # The higher, the less frequent the direction changes
-    
+
     direction = 0  # Current direction of the crack
     for i in range(1, width):
         # Randomly change direction, but keep changes small for smoothness
@@ -289,6 +289,8 @@ def draw_crack(image, path_func, line_color, rect_region, max_width=2):
 
     # Find the new bounding box of the rotated crack within the padded image
     non_zero_coords = np.argwhere(rotated_padded_crack > 0)
+    if non_zero_coords.size == 0:
+        return image,()
     min_coords = non_zero_coords.min(axis=0)
     max_coords = non_zero_coords.max(axis=0)
     rotated_crack_cropped = rotated_padded_crack[min_coords[0]:max_coords[0]+1, min_coords[1]:max_coords[1]+1]
@@ -297,13 +299,19 @@ def draw_crack(image, path_func, line_color, rect_region, max_width=2):
 
     # Determine placement of the cropped rotated crack
     # Center of the rectangle region in the original image
-    rect_center_y, rect_center_x = (start_y + end_y) // 2, (start_x + end_x) // 2
+    #rect_center_y, rect_center_x = (start_y + end_y) // 2, (start_x + end_x) // 2
     # Center of the cropped rotated crack
-    crack_center_y, crack_center_x = rotated_crack_cropped.shape[0] // 2, rotated_crack_cropped.shape[1] // 2
-
+    #crack_center_y, crack_center_x = rotated_crack_cropped.shape[0] // 2, rotated_crack_cropped.shape[1] // 2
     # Calculate top-left coordinates for placing the cropped rotated crack
-    top_left_y = rect_center_y - crack_center_y
-    top_left_x = rect_center_x - crack_center_x
+    #top_left_y = rect_center_y - crack_center_y
+    #top_left_x = rect_center_x - crack_center_x
+
+    # Calculate random top-left coordinates for placing the cropped rotated crack
+    max_top_left_y = image.shape[0] - rotated_crack_cropped.shape[0]
+    max_top_left_x = image.shape[1] - rotated_crack_cropped.shape[1]
+
+    top_left_y = np.random.randint(0, max(1, max_top_left_y))
+    top_left_x = np.random.randint(0, max(1, max_top_left_x))
 
     # Place the cropped rotated crack onto the original image
     for r in range(rotated_crack_cropped.shape[0]):
@@ -316,6 +324,9 @@ def draw_crack(image, path_func, line_color, rect_region, max_width=2):
 
     # Find non-zero pixels in the final image
     non_zero_coords = np.argwhere(image[:, :, 0] != 255)  # Assuming the background is white
+    if non_zero_coords.size == 0:
+        return image,()
+    
     # Get the extents of the non-zero regions
     min_y, min_x = non_zero_coords.min(axis=0)
     max_y, max_x = non_zero_coords.max(axis=0)
@@ -516,9 +527,9 @@ def main(args):
         image = np.ones((args.image_height, args.image_width, 3), dtype=np.uint8) * 255
         crack_color = np.array([173, 255, 47])  # bright green
         min_rect_size = 100
-        max_rect_extra = 400
-        rect_start_x = np.random.randint(20, (args.image_width - min_rect_size)//2)
-        rect_start_y = np.random.randint(20, (args.image_height - min_rect_size)//2)
+        max_rect_extra = 300
+        rect_start_x = np.random.randint(50, (args.image_width - min_rect_size)//2)
+        rect_start_y = np.random.randint(50, (args.image_height - min_rect_size)//2)
         rect_end_x = np.random.randint(rect_start_x + min_rect_size, min(args.image_width, rect_start_x + max_rect_extra))
         rect_end_y = np.random.randint(rect_start_y + min_rect_size, min(args.image_height, rect_start_y + max_rect_extra))
         rect_region = (rect_start_x, rect_start_y, rect_end_x, rect_end_y)
@@ -529,9 +540,14 @@ def main(args):
 
         # Save annotations
         annotations_file = os.path.join(args.output_dir, 'labels', f'{i + 1}.txt')
-        formatted_annotation = " ".join(f"{x:.8f}" if isinstance(x, float) else str(x) for x in annotations)
-        with open(annotations_file, 'w') as file:
-            file.write(formatted_annotation + '\n')
+        if annotations:  # This checks if annotations tuple is not empty
+            formatted_annotation = " ".join(f"{x:.8f}" if isinstance(x, float) else str(x) for x in annotations)
+            with open(annotations_file, 'w') as file:
+                file.write(formatted_annotation + '\n')
+        else:
+            # Create an empty file if there are no annotations
+            with open(annotations_file, 'w') as file:
+                pass  # Simply pass, resulting in an empty file
 
         # Blend images and save
         # Blend images

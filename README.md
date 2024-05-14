@@ -78,7 +78,7 @@ pip install -r requirements.txt
 To run YOLOv8 model install the following dependencies:
 ```bash
 cd ./code/ultralytics/
-pip install -r requirements.txt
+pip install -e .
 ```
 
 ## Usage
@@ -87,8 +87,9 @@ To train an existing model on your custom/defect detection dataset:
 - Go to the yolov5 directory
 - create a dataset.yaml file in the same format for training yolov5
 - Run the below script with your required parameters
+- Follow the same training and inference methodology as mentioned in [YOLOv5](https://github.com/ultralytics/yolov5) repository 
 
 
 ```bash
-python train.py --weights configs/yolov5_cbam.yaml --b
+python train.py --img 640 --batch 16 --epochs 300 --optimizer AdamW --seed 7 --data dataset.yaml --cfg yolov5s_custom_cbam_1.yaml --weights ''
 ```

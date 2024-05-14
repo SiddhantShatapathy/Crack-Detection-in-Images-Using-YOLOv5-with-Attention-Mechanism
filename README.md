@@ -114,10 +114,10 @@ yolo task=detect mode=train model=yolov8s.yaml data=dataset.yaml  epochs=200 img
 <img src="Assets/Imgs/v5_a2_arch.jpg" width="50%" height="50%">
 
 We have the following YOLOv5 models enhanced with attention mechanisms:
-* yolov5s_custom_cbam_1 : YOLOv5 enhanced with the Convolutional Block Attention Module (CBAM) following [Model-1 architecture](#model-1).
-* yolov5s_custom_cbam_2 : YOLOv5 enhanced with the Convolutional Block Attention Module (CBAM) following [Model-2 architecture](#model-2).
-* yolov5s_custom_pwa_1 : YOLOv5 enhanced with the Patch Wise Attention (PWA) mechanism following [Model-1 architecture](#model-1).
-* yolov5s_custom_pwa_2 : YOLOv5 enhanced with the Patch Wise Attention (PWA) mechanism following [Model-2 architecture](#model-2).
+* [yolov5s_custom_cbam_1](Models/v5/CBAM/yolov5s_custom_cbam_1.yaml) : YOLOv5 enhanced with the Convolutional Block Attention Module (CBAM) following [Model-1 architecture](#model-1).
+* [yolov5s_custom_cbam_2](Models/v5/CBAM/yolov5s_custom_cbam_2.yaml) : YOLOv5 enhanced with the Convolutional Block Attention Module (CBAM) following [Model-2 architecture](#model-2).
+* [yolov5s_custom_pwa_1](Models/v5/PWA/yolov5s_custom_pwa_1.yaml) : YOLOv5 enhanced with the Patch Wise Attention (PWA) mechanism following [Model-1 architecture](#model-1).
+* [yolov5s_custom_pwa_2](Models/v5/PWA/yolov5s_custom_pwa_2.yaml) : YOLOv5 enhanced with the Patch Wise Attention (PWA) mechanism following [Model-2 architecture](#model-2).
 
 We also have other attention mechanisms incorporated YOLOv5 models including SENET, ECANET and Coordinate Attention. We also have YOLO models with extra block performing Gaussian blur or Edge detection. See the 
 [Models](Models) directory for all the available models.

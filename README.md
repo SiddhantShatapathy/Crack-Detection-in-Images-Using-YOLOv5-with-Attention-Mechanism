@@ -11,8 +11,6 @@ The models are trained to identify and classify subtle and camouflaged defects w
 - [Installation](#installation)
 - [Usage](#usage)
 - [Model Details](#model-details)
-- [Results](#results)
-- [Contributing](#contributing)
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
 
@@ -120,5 +118,15 @@ We have the following YOLOv5 models enhanced with attention mechanisms:
 * yolov5s_custom_pwa_2 : YOLOv5 enhanced with the Patch Wise Attention (PWA) mechanism following [Model-2 architecture](#model-2).
 
 We also have other attention mechanisms incorporated YOLOv5 models including SENET, ECANET and Coordinate Attention. We also have YOLO models with extra block performing Gaussian blur or Edge detection. See the 
-[Models]() directory for all the available models.
+[Models](Models) directory for all the available models.
+
+
+## License
+
+This project is not currently open for reuse, modification, or distribution. For any inquiries regarding the use of the project's contents or code, please contact the repository owner.
+
+## Acknowledgements
+
+Heartfelt thanks to my supervisor, Dr. Mrinal Kanti Das, for his crucial guidance.
+Special appreciation to the faculty, colleagues, and friends from the Department of Data Science at IIT Palakkad for their invaluable support throughout my research journey.
 

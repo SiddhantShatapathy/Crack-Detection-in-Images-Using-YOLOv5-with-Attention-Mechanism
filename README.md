@@ -109,7 +109,7 @@ yolo task=detect mode=train model=yolov8s.yaml data=dataset.yaml  epochs=200 img
 <a id="model-1"></a> <!-- Anchor Tag for Linking -->
 <img src="Assets/Imgs/v5_a1_arch.jpg" width="50%" height="50%">
 
-### Model-1 architecture:
+### Model-2 architecture:
 <a id="model-2"></a> <!-- Anchor Tag for Linking -->
 <img src="Assets/Imgs/v5_a2_arch.jpg" width="50%" height="50%">
 

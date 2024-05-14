@@ -20,7 +20,7 @@ The models are trained to identify and classify subtle and camouflaged defects w
 Defect detection is crucial for maintaining safety and quality in industries such as
 aerospace, automotive, and construction. Traditional methods often fail to identify
 subtle and camouflaged defects. This thesis explores the use of the YOLOv5 object
-detection model, enhanced with the Convolutional Block Attention Module (CBAM), [Model-1 architecture](#model-1),
+detection model, enhanced with the Convolutional Block Attention Module (CBAM), [YOLOv5s + CBAM (1)](#model-1),
 to improve the detection of these concealed defects. YOLOv5 with CBAM boosts the
 model’s precision and focus, resulting in more accurate detection of subtle defects,
 specifically in MPI materials.
@@ -110,13 +110,15 @@ yolo task=detect mode=train model=yolov8s.yaml data=dataset.yaml  epochs=200 img
 ### Model-1 architecture:
 <a id="model-1"></a> <!-- Anchor Tag for Linking -->
 <img src="Assets/Imgs/v5_a1_arch.jpg" width="50%" height="50%">
+<a id="model-2"></a> <!-- Anchor Tag for Linking -->
+<img src="Assets/Imgs/v5_a2_arch.jpg" width="50%" height="50%">
 
 We have the following YOLOv5 models enhanced with attention mechanisms:
 * yolov5s_custom_cbam_1 : YOLOv5 enhanced with the Convolutional Block Attention Module (CBAM) following [Model-1 architecture](#model-1).
+* yolov5s_custom_cbam_2 : YOLOv5 enhanced with the Convolutional Block Attention Module (CBAM) following [Model-2 architecture](#model-2).
+* yolov5s_custom_pwa_1 : YOLOv5 enhanced with the Patch Wise Attention (PWA) mechanism following [Model-1 architecture](#model-1).
+* yolov5s_custom_pwa_2 : YOLOv5 enhanced with the Patch Wise Attention (PWA) mechanism following [Model-2 architecture](#model-2).
 
-* yolov5s_custom_cbam_2 : YOLOv5 enhanced with the Convolutional Block Attention Module (CBAM) 
-  
-Patch-wise Attention Model
-Focus: Specifically targets areas with potential defects.
-Performance: Provides results comparable to the baseline and excels in specific scenarios.
+We also have other attention mechanisms incorporated YOLOv5 models including SENET, ECANET and Coordinate Attention. We also have YOLO models with extra block performing Gaussian blur or Edge detection. See the 
+[Models]() directory for all the available models.
 

@@ -1,0 +1,7 @@
+
+train: ./images/train  #path to train images dir
+val: ./images/val   #path to val images dir
+
+nc: 1
+# Classes
+names: ['crack']

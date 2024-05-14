@@ -195,7 +195,9 @@ def train(hyp, opt, device, callbacks):
     else:
         model = Model(cfg, ch=3, nc=nc, anchors=hyp.get("anchors")).to(device)  # create
     amp = check_amp(model)  # check AMP
-
+    #amp = False
+    #prefix = colorstr("AMP: ")
+    #print(f"{prefix}❌, Disabling Automatic Mixed Precision")
     # Freeze
     freeze = [f"model.{x}." for x in (freeze if len(freeze) > 1 else range(freeze[0]))]  # layers to freeze
     for k, v in model.named_parameters():
@@ -283,7 +285,7 @@ def train(hyp, opt, device, callbacks):
             single_cls,
             hyp=hyp,
             cache=None if noval else opt.cache,
-            rect=True,
+            rect=opt.rect,
             rank=-1,
             workers=workers * 2,
             pad=0.5,

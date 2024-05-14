@@ -58,6 +58,8 @@ from models.common import (
     AIFI,
     AIFI_new,
     AIFI_conv,
+    GaussianBlur,
+    Edgedetection,
 )
 from models.experimental import MixConv2d
 from utils.autoanchor import check_anchor_order

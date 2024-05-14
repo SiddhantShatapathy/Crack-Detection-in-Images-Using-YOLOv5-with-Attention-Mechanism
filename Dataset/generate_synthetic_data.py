@@ -215,7 +215,7 @@ def create_texture(final_width, final_height, patch_size, overlap,color_maps):
 
 def generate_crack_path(width, height, max_step=1, stability_span=200):
     x = np.arange(width)
-    y_start = np.random.choice([height//32,height//16,height//8,height//4])
+    y_start = np.random.choice([height//32,height//16,height//8,height//4],p=[0,0.35,0.35,0.3])
     #print(y_start)
     y = np.full(width, np.random.randint(y_start, height))
     
@@ -443,7 +443,7 @@ def blend_images_processed(texture_path, crack_image, crack_color,sigma=1.0):
 ##################################################################################################################
 
 ## Add salt and pepper nosie to blended image
-def add_salt_pepper_noise(image, amount=0.004, s_vs_p=0.1, mean_rad=1, std_rad=0.5):
+def add_salt_pepper_noise(image, amount=0.006, s_vs_p=0.4, mean_rad=1, std_rad=0.5):
     rng = np.random.default_rng()
     rgb_image = np.copy(image)
 
@@ -526,14 +526,14 @@ def main(args):
         # Generate and save crack image
         image = np.ones((args.image_height, args.image_width, 3), dtype=np.uint8) * 255
         crack_color = np.array([173, 255, 47])  # bright green
-        min_rect_size = 100
-        max_rect_extra = 300
-        rect_start_x = np.random.randint(50, (args.image_width - min_rect_size)//2)
-        rect_start_y = np.random.randint(50, (args.image_height - min_rect_size)//2)
+        min_rect_size = 50
+        max_rect_extra = 200
+        rect_start_x = np.random.randint(20, (args.image_width - min_rect_size)//2)
+        rect_start_y = np.random.randint(20, (args.image_height - min_rect_size)//2)
         rect_end_x = np.random.randint(rect_start_x + min_rect_size, min(args.image_width, rect_start_x + max_rect_extra))
         rect_end_y = np.random.randint(rect_start_y + min_rect_size, min(args.image_height, rect_start_y + max_rect_extra))
         rect_region = (rect_start_x, rect_start_y, rect_end_x, rect_end_y)
-        max_width = np.random.randint(2,7)
+        max_width = np.random.randint(1,3)
         crack_image, annotations = draw_crack(image, generate_crack_path, crack_color,rect_region, max_width)
         crack_file = os.path.join(args.output_dir, 'cracks', f'{i + 1}.jpg')
         plt.imsave(crack_file, crack_image, dpi=600)

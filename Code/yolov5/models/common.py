@@ -66,7 +66,7 @@ def autopad(k, p=None, d=1):  # kernel, padding, dilation
     return p
 
 ######################################
-########  MHA Block ##################
+########Transformer in yolo##################
 
 #check version of pytorch > 1.9.0 for transformer encoder layer
 def check_torch_version():
@@ -175,7 +175,7 @@ class AIFI_conv(TransformerEncoderLayer):
         x = self.patch_embedding(x)
         # Batch normalization and activation
         x = self.act_conv(x)
-        #x = self.batch_norm_conv(x)
+        x = self.batch_norm_conv(x)
         
         #print("patch_embedding shape:",x.shape)
         #print(x)
@@ -206,7 +206,7 @@ class AIFI_conv(TransformerEncoderLayer):
         # Layer normalization and activation
         #x = self.norm_conv_inv(x)
         x = self.act_conv_inv(x)
-        #x = self.batch_norm_conv_inv(x)
+        x = self.batch_norm_conv_inv(x)
         #print("final shape:",x.shape)
         return x
 
@@ -264,6 +264,8 @@ class AIFI_new(TransformerEncoderLayer):
         #self.batch_norm_fc = nn.BatchNorm2d(self.embed_dim)
         #self.batch_norm_fc_inv = nn.BatchNorm1d(c1 * patch_size[0] * patch_size[1])
 
+        
+
 
     def forward(self, x):
         """Forward pass for the AIFI transformer layer."""
@@ -318,6 +320,10 @@ class AIFI_new(TransformerEncoderLayer):
 
         return x
 
+    #def num_parameters(self):
+    #    """Calculate the number of parameters in the model."""
+    #    return sum(p.numel() for p in self.parameters() if p.requires_grad)
+
     @staticmethod
     def build_2d_sincos_position_embedding(n_h,n_w,embed_dim=128,temperature=10000.0):
         """Builds 2D sine-cosine position embedding for patches."""
@@ -338,9 +344,83 @@ class AIFI_new(TransformerEncoderLayer):
 
         return position_embedding
 
-#################################################################
+######### old method ################################
+class AIFI(TransformerEncoderLayer):
+    """Defines the AIFI transformer layer."""
 
-##############  C3_cbam block   ##########
+    def __init__(self, c1, cm=512, num_heads=8, dropout=0, act='gelu', normalize_before=False, patch_size=[2, 2],stride = [2, 2]):
+        """Initialize the AIFI instance with specified parameters."""
+        super().__init__(c1 * (patch_size[0] * patch_size[1]), cm, num_heads, dropout, act, normalize_before)
+        self.patch_size = patch_size
+        self.stride = stride
+        if act == 'gelu':
+            self.act = nn.GELU()
+        elif act == 'silu':
+            self.act = nn.SiLU()
+        else:
+            raise ValueError(f"Activation '{act}' not supported. Choose 'gelu' or 'silu'.")
+
+
+    def forward(self, x):
+        """Forward pass for the AIFI transformer layer."""
+        B, C, H, W = x.shape
+        # calculate the number of patches along each dimension
+        num_patches_h = (H - self.patch_size[0]) // self.stride[0] + 1
+        num_patches_w = (W - self.patch_size[1]) // self.stride[1] + 1
+        num_patches = num_patches_h * num_patches_w
+        #unfold to extract non overlapping patches
+        unfolded_patches = x.unfold(2, self.patch_size[0], self.stride[0]).unfold(3, self.patch_size[1], self.stride[1])
+        #print(unfolded_patches.shape)
+        #reshape the unfolded patches to (B, num_patches_h * num_patches_w, C * patch_size[0] * patch_size[1])
+        x = unfolded_patches.permute(0, 2, 3, 1, 4, 5).contiguous()
+        #print(x.shape)
+        x = x.view(B, num_patches_h * num_patches_w, C * self.patch_size[0] * self.patch_size[1])
+
+        #get shapes for pos embed
+        #b,c,n_h,n_w,h,w = unfolded_patches.shape
+        #print(c)
+        pos_embed = self.build_2d_sincos_position_embedding(num_patches_h,num_patches_w,H,W,self.patch_size,C,10000.0)
+        #print("pos embed:", pos_embed.shape)
+
+        #print("x shape before MHA:",x.shape)
+
+        #multi-head attention
+        x = super().forward(x, pos=pos_embed.to(device=x.device, dtype=x.dtype))
+        #print('after mha x shape',x.shape)
+
+        
+        #reverse to back the unfolded patches
+        x = x.view(B, num_patches_h, num_patches_w, C, self.patch_size[0], self.patch_size[1])
+        x = x.permute(0, 3, 1, 4, 2, 5).contiguous()
+        #print('after mha get unfolded patches',x.shape)
+
+        #merge the patches to reconstruct the original tensor shape
+        x = x.view(B, C, H, W)
+        #print('after mha get org shape',x.shape)
+
+        return x
+
+    @staticmethod
+    def build_2d_sincos_position_embedding(n_h,n_w,h,w,patch_size,embed_dim=256, temperature=10000.0):
+        """Builds 2D sine-cosine position embedding for patches."""
+        assert embed_dim % 4 == 0, "Embed dimension must be divisible by 4 for 2D sin-cos position embedding"
+        grid_w = torch.arange(n_w, dtype=torch.float32)
+        grid_h = torch.arange(n_h, dtype=torch.float32)
+        grid_w, grid_h = torch.meshgrid(grid_w, grid_h, indexing="ij")
+        pos_dim = embed_dim // 4
+        omega = torch.arange(pos_dim, dtype=torch.float32) / pos_dim
+        omega = 1.0 / (temperature**omega)
+
+        out_w = grid_w.flatten()[..., None] @ omega[None]
+        out_h = grid_h.flatten()[..., None] @ omega[None]
+
+        position_embedding = torch.cat([torch.sin(out_w), torch.cos(out_w), torch.sin(out_h), torch.cos(out_h)], 1)[None]
+        position_embedding = position_embedding.repeat_interleave(patch_size[0]*patch_size[1], dim=2)
+
+        return position_embedding
+##############################################
+
+####    C3_cbam     ##########
 class C3_cbam(nn.Module):
     # CSP Bottleneck with 3 convolutions
     def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
@@ -357,8 +437,8 @@ class C3_cbam(nn.Module):
         features = self.se(features)  # Apply CBAM Attention
         return self.cv3(features)
 
-###################################################################
-############ C3_senet block ##############
+#############
+#### C3_senet ######
 
 class C3_senet(nn.Module):
     # CSP Bottleneck with 3 convolutions
@@ -712,6 +792,293 @@ class SEBlock(nn.Module):
         return x * y.expand_as(x)
 
 #####################        #########################
+
+############ test 2
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class Edgedetection(nn.Module):
+    def __init__(self, blur_kernel_size, blur_sigma):
+        super(Edgedetection, self).__init__()
+        self.blur_kernel_size = blur_kernel_size
+        self.blur_sigma = blur_sigma
+        self.register_buffer('gaussian_kernel', self.create_gaussian_kernel())
+        self.register_buffer('scharr_x', torch.tensor([[-3, 0, 3], [-10, 0, 10], [-3, 0, 3]], dtype=torch.float32).unsqueeze(0).unsqueeze(0))
+        self.register_buffer('scharr_y', torch.tensor([[-3, -10, -3], [0, 0, 0], [3, 10, 3]], dtype=torch.float32).unsqueeze(0).unsqueeze(0))
+
+    def forward(self, x):
+        edges = self.edge_detection(x)
+        return edges
+
+    def edge_detection(self, images):
+        # Apply Gaussian blur and Scharr filters to the input images
+        blurred = self.gaussian_blur(images)
+        scharr_output = self.scharr_filters(blurred)
+
+        return scharr_output
+
+    def create_gaussian_kernel(self):
+      sigma = self.blur_sigma
+      if sigma == 0:
+        sigma = 0.3 * ((self.blur_kernel_size - 1) * 0.5 - 1) + 0.8
+        kernel = torch.ones(1, 1, self.blur_kernel_size, self.blur_kernel_size)
+        center = self.blur_kernel_size // 2
+        for i in range(self.blur_kernel_size):
+            for j in range(self.blur_kernel_size):
+                x, y = i - center, j - center
+                x, y = torch.tensor(x), torch.tensor(y)
+                kernel[0, 0, i, j] = torch.exp(-(x**2 + y**2) / (2.0 *sigma**2))
+        kernel /= kernel.sum()
+        return kernel
+
+    def gaussian_blur(self, x):
+        num_channels = x.size(1)
+        blurred_channels = []
+        for i in range(num_channels):
+            channel = x[:, i:i+1, :, :]
+            blurred_channel = F.conv2d(channel, self.gaussian_kernel, padding=self.blur_kernel_size//2)
+            blurred_channels.append(blurred_channel)
+        blurred_output = torch.cat(blurred_channels, dim=1)
+        return blurred_output
+
+    def scharr_filters(self, x):
+        num_channels = x.size(1)
+        scharr_channels = []
+        for i in range(num_channels):
+            channel = x[:, i:i+1, :, :]
+            scharr_output_x = F.conv2d(channel, self.scharr_x, padding=1)
+            scharr_output_y = F.conv2d(channel, self.scharr_y, padding=1)
+            gradient_magnitude = torch.sqrt(scharr_output_x**2 + scharr_output_y**2)
+            scharr_channels.append(gradient_magnitude)
+        scharr_output = torch.cat(scharr_channels, dim=1)
+        return scharr_output
+
+
+
+
+
+
+
+
+
+
+################# Edge detection ##################################
+
+import torchvision.transforms.functional as TF
+import cv2
+import numpy as np
+class EdgeDetection(nn.Module):
+    def __init__(self, low_threshold, high_threshold, blur_kernel_size=3,blur_sigma=0,scharr_kernel_size=3,L2_gradient=True):
+        super(EdgeDetection, self).__init__()
+        self.low_threshold = low_threshold
+        self.high_threshold = high_threshold
+        self.blur_kernel_size = blur_kernel_size
+        self.blur_sigma = blur_sigma
+        self.scharr_kernel_size = scharr_kernel_size
+        self.L2_gradient = L2_gradient
+
+
+    def forward(self, x):
+        edges = self.edge_detection(x)
+        return edges
+
+    def create_gaussian_kernel(self,blur_kernel_size,):
+        kernel = torch.ones(1, 1, self.blur_kernel_size, self.blur_kernel_size)
+        center = self.blur_kernel_size // 2
+        for i in range(self.blur_kernel_size):
+            for j in range(self.blur_kernel_size):
+                x, y = i - center, j - center
+                x, y = torch.tensor(x), torch.tensor(y)  # Convert x and y to tensors
+                kernel[0, 0, i, j] = torch.exp(-(x**2 + y**2) / (2.0 * self.sigma**2))
+        kernel /= kernel.sum()
+        self.register_buffer('gaussian_kernel', kernel)
+        return kernel
+
+    def gaussian_blur(self, x):
+        # Get the number of channels in the input
+        kernel = self.create_gaussian_kernel()
+        num_channels = x.size(1)
+        # Apply Gaussian blur to each channel separately
+        blurred_channels = []
+        for i in range(num_channels):
+            channel = x[:, i:i+1, :, :]
+            blurred_channel = F.conv2d(channel, self.gaussian_kernel, padding=self.kernel_size//2)
+            blurred_channels.append(blurred_channel)
+        
+        # Concatenate the blurred channels to form the output
+        blurred_output = torch.cat(blurred_channels, dim=1)
+
+        return blurred_output
+
+    def edge_detection(self, images):
+        #start_time=time.time()
+        batch_size, channels, height, width = images.size()
+        edges_batch = []
+
+        for i in range(batch_size):
+            # Convert the current image in the batch to a NumPy array
+            image_np = images[i].squeeze().cpu().numpy().astype(np.uint8)
+            image_np = np.transpose(image_np, (1, 2, 0))
+
+            # Apply edge detection operations
+            gray_image = cv2.cvtColor(image_np, cv2.COLOR_RGB2GRAY)
+            blurred = self.gaussian_blur(gray_image, self.blur_kernel_size, self.blur_sigma)
+            gradient_magnitude, gradient_direction = self.scharr_filters(blurred, self.scharr_kernel_size, self.L2_gradient)
+            #suppressed = self.non_max_suppression(gradient_magnitude, gradient_direction)
+            #strong_edges, weak_edges = self.double_thresholding(suppressed, self.low_threshold, self.high_threshold)
+            #edges = self.edge_tracking_by_hysteresis(strong_edges, weak_edges)
+            edges=gradient_magnitude
+            # Convert the NumPy array back to a PyTorch tensor
+            edges_tensor = torch.from_numpy(edges).float().unsqueeze(0).unsqueeze(0).to(images.device)
+
+            # Repeat the single-channel tensor to make it three channels
+            #edges_tensor = torch.cat([edges_tensor, edges_tensor, edges_tensor], dim=1)
+            edges_tensor = torch.cat([edges_tensor] * channels, dim=1)
+            edges_batch.append(edges_tensor)
+
+        # Stack the results along the batch dimension
+        edges_batch = torch.cat(edges_batch, dim=0)
+        #end_time = time.time()
+        #elapsed_time = end_time - start_time
+        #print(f"Time taken for {batch_size} images: {elapsed_time} seconds")
+
+
+        return edges_batch
+
+
+    def gaussian_blur(self, image, kernel_size, sigma=0):
+        # Define the variance
+        if sigma == 0:
+            sigma = 0.3 * ((kernel_size - 1) * 0.5 - 1) + 0.8
+        # Define the filter
+        gaussian_kernel = self.gaussian_kernel_2d(kernel_size,sigma)
+        # Convolution with the filter
+        blurred_image = cv2.filter2D(src=image, ddepth=-1, kernel=gaussian_kernel)
+        return blurred_image
+
+    def gaussian_kernel_2d(self, kernel_size, sigma):
+        # Generate random points from the 2D Gaussian distribution
+        kernel = np.fromfunction(
+            lambda x, y: (1 / (2 * np.pi * sigma ** 2)) * np.exp(-((x - (kernel_size - 1) / 2) ** 2 + (y - (kernel_size - 1) / 2) ** 2) / (2 * sigma ** 2)),
+            (kernel_size, kernel_size)
+        )
+        # Normalize the kernel weights
+        kernel /= np.sum(kernel)
+        return kernel
+
+    def scharr_filters(self, image, kernel_size, L2_gradient=False):
+        scharr_x = cv2.Scharr(image, cv2.CV_64F, 1, 0)
+        scharr_y = cv2.Scharr(image, cv2.CV_64F, 0, 1)
+
+        if L2_gradient:
+            gradient_magnitude = np.sqrt(scharr_x**2 + scharr_y**2)
+            gradient_direction = np.arctan2(scharr_y, scharr_x)
+        else:
+            gradient_magnitude = np.abs(scharr_x) + np.abs(scharr_y)
+            gradient_direction = np.arctan2(scharr_y, scharr_x)
+
+        return gradient_magnitude, gradient_direction
+
+
+    def non_max_suppression(self, gradient_magnitude, gradient_direction):
+        #print(gradient_magnitude.shape)
+        rows, cols = gradient_magnitude.shape
+        result = np.zeros_like(gradient_magnitude)
+
+        for i in range(1, rows - 1):
+          for j in range(1, cols - 1):
+            angle = gradient_direction[i, j]
+            q = gradient_magnitude[i, j]
+            p1, p2 = 0, 0
+
+            if (0 <= angle < np.pi / 8) or (15 * np.pi / 8 <= angle <= 2 * np.pi):
+                p1 = gradient_magnitude[i, j + 1]
+                p2 = gradient_magnitude[i, j - 1]
+            elif (np.pi / 8 <= angle < 3 * np.pi / 8) or (9 * np.pi / 8 <= angle < 11 * np.pi / 8):
+                p1 = gradient_magnitude[i + 1, j - 1]
+                p2 = gradient_magnitude[i - 1, j + 1]
+            elif (3 * np.pi / 8 <= angle < 5 * np.pi / 8) or (11 * np.pi / 8 <= angle < 13 * np.pi / 8):
+                p1 = gradient_magnitude[i + 1, j]
+                p2 = gradient_magnitude[i - 1, j]
+            elif (5 * np.pi / 8 <= angle < 7 * np.pi / 8) or (13 * np.pi / 8 <= angle < 15 * np.pi / 8):
+                p1 = gradient_magnitude[i - 1, j - 1]
+                p2 = gradient_magnitude[i + 1, j + 1]
+
+            if q >= p1 and q >= p2:
+                result[i, j] = q
+
+        return result
+
+
+    def double_thresholding(self, image, low_threshold, high_threshold):
+        strong_edges = (image >= high_threshold)
+        weak_edges = (image >= low_threshold) & (image < high_threshold)
+        return strong_edges, weak_edges
+
+    def edge_tracking_by_hysteresis(self, strong_edges, weak_edges):
+        rows, cols = strong_edges.shape
+        result = np.zeros((rows, cols), dtype=np.uint8)
+
+        for i in range(1, rows - 1):
+            for j in range(1, cols - 1):
+                if strong_edges[i, j]:
+                    result[i, j] = 255
+                elif weak_edges[i, j]:
+                    if (strong_edges[i-1:i+2, j-1:j+2] == 255).any():
+                        result[i, j] = 255
+
+        return result
+
+
+
+
+###################################################################
+####################-------- Gaussian module----------#########################
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class GaussianBlur(nn.Module):
+    def __init__(self, kernel_size, sigma):
+        super(GaussianBlur, self).__init__()
+        self.kernel_size = kernel_size
+        self.sigma = sigma
+
+        # Create a Gaussian kernel
+        self.create_gaussian_kernel()
+
+    def create_gaussian_kernel(self):
+        kernel = torch.ones(1, 1, self.kernel_size, self.kernel_size)
+        center = self.kernel_size // 2
+        for i in range(self.kernel_size):
+            for j in range(self.kernel_size):
+                x, y = i - center, j - center
+                x, y = torch.tensor(x), torch.tensor(y)  # Convert x and y to tensors
+                kernel[0, 0, i, j] = torch.exp(-(x**2 + y**2) / (2.0 * self.sigma**2))
+        kernel /= kernel.sum()
+        self.register_buffer('gaussian_kernel', kernel)
+
+
+    def forward(self, x):
+        # Get the number of channels in the input
+        num_channels = x.size(1)
+
+        # Apply Gaussian blur to each channel separately
+        blurred_channels = []
+        for i in range(num_channels):
+            channel = x[:, i:i+1, :, :]
+            blurred_channel = F.conv2d(channel, self.gaussian_kernel, padding=self.kernel_size//2)
+            blurred_channels.append(blurred_channel)
+        
+        # Concatenate the blurred channels to form the output
+        blurred_output = torch.cat(blurred_channels, dim=1)
+
+        return blurred_output
+
+##############################################################################
+
+
 class Conv(nn.Module):
     # Standard convolution with args(ch_in, ch_out, kernel, stride, padding, groups, dilation, activation)
     default_act = nn.SiLU()  # default activation

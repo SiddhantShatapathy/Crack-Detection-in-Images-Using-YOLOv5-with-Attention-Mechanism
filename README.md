@@ -108,9 +108,12 @@ yolo task=detect mode=train model=yolov8s.yaml data=dataset.yaml  epochs=200 img
 ## Model Details
 
 ### Model-1 architecture:
-<img src="Assets/Imgs/v5_a1_arch.jpg" width=50% height=50%>
+<a id="model-1"></a> <!-- Anchor Tag for Linking -->
+<img src="Assets/Imgs/v5_a1_arch.jpg" width="50%" height="50%">
+
 We have the following YOLOv5 models enhanced with attention mechanisms:
-* yolov5s_custom_cbam_1 : YOLOv5 enhanced with the Convolutional Block Attention Module (CBAM) following [Model-1 architecture:](#model-1) architecure
+* yolov5s_custom_cbam_1 : YOLOv5 enhanced with the Convolutional Block Attention Module (CBAM) following [Model-1 architecture](#model-1).
+
 * yolov5s_custom_cbam_2 : YOLOv5 enhanced with the Convolutional Block Attention Module (CBAM) 
   
 Patch-wise Attention Model

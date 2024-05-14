@@ -64,7 +64,7 @@ Before you can run this project, you will need the following:
 To get started with this project, clone the repository and install the required dependencies:
 Clone the current repository.
 ```bash
-git clone https://github.com/yourusername/defect-detection-yolo.git
+git clone [https://github.com/yourusername/defect-detection-yolo.git](https://github.com/SiddhantShatapathy/Crack-Detection-in-Images-Using-YOLOv5-with-Attention-Mechanism.git)
 ```
 
 To run YOLOv5 model install the following dependencies:

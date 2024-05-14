@@ -17,7 +17,31 @@ The models are trained to identify and classify subtle and camouflaged defects w
 - [Acknowledgements](#acknowledgements)
 
 ## Introduction
-
+Defect detection is crucial for maintaining safety and quality in industries such as
+aerospace, automotive, and construction. Traditional methods often fail to identify
+subtle and camouflaged defects. This thesis explores the use of the YOLOv5 object
+detection model, enhanced with the Convolutional Block Attention Module (CBAM),
+to improve the detection of these concealed defects. YOLOv5 with CBAM boosts the
+model’s precision and focus, resulting in more accurate detection of subtle defects,
+specifically in MPI materials.
+Our proposed model, the enhanced YOLOv5 with CBAM, outperforms the baseline
+by 2.16% in mAP50-95. This significant improvement demonstrates the effectiveness
+of integrating attention mechanisms into object detection models. Additionally,
+we developed another model incorporating patch-wise attention to focus on areas with
+cracks. While this model does not surpass the CBAM-enhanced model, it performs
+as well as the baseline and yields better results in specific cases, showing its potential
+in particular scenarios.
+To address the lack of specific data for training and testing these new proposed
+models, we created a new synthetic dataset. This dataset is designed to simulate realworld
+conditions of defect detection, particularly targeting subtle and camouflaged
+defects in MPI (Magnetic Particle Inspection) materials. The synthetic dataset is
+used to train and evaluate these models specific to our task.
+Our work demonstrates the effectiveness of advanced detection algorithms like
+YOLOv5 combined with attention mechanisms such as CBAM. It lays a strong foundation
+for further research, suggesting a promising future for deploying deep learning
+technologies in industrial quality control. This research highlights the potential for
+ongoing innovation in automated defect detection, paving the way for more reliable
+and efficient inspection processes.
 
 ## Features
 
@@ -33,7 +57,9 @@ Before you can run this project, you will need the following:
 - PyTorch
 - OpenCV
 - NumPy
+- Pandas
 - Matplotlib
+- Noise (for synthetic data generation)
 
 ## Installation
 
@@ -44,16 +70,16 @@ git clone https://github.com/yourusername/defect-detection-yolo.git
 ```
 
 To run YOLOv5 model install the following dependencies:
-
+```bash
 cd ./code/yolov5
 pip install -r requirements.txt
-
+```
 
 To run YOLOv8 model install the following dependencies:
-
+```bash
 cd ./code/ultralytics/
 pip install -r requirements.txt
-
+```
 
 ## Usage
 

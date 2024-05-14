@@ -83,13 +83,37 @@ pip install -e .
 
 ## Usage
 
-To train an existing model on your custom/defect detection dataset:
+To train an existing yolov5 model on your custom/defect detection dataset:
 - Go to the yolov5 directory
 - create a dataset.yaml file in the same format for training yolov5
 - Run the below script with your required parameters
-- Follow the same training and inference methodology as mentioned in [YOLOv5](https://github.com/ultralytics/yolov5) repository 
-
 
 ```bash
 python train.py --img 640 --batch 16 --epochs 300 --optimizer AdamW --seed 7 --data dataset.yaml --cfg yolov5s_custom_cbam_1.yaml --weights ''
 ```
+- Follow the same training and inference methodology as mentioned in [YOLOv5](https://github.com/ultralytics/yolov5) repository 
+
+
+To train an existing yolov8 model on your custom/defect detection dataset:
+- Go to the yolov8/ultralytics directory
+- create a dataset.yaml file in the same format for training yolov8
+- Run the below script with your required parameters
+```bash
+yolo task=detect mode=train model=yolov8s.yaml data=dataset.yaml  epochs=200 imgsz=640 batch=16 pretrained=False
+```
+- Follow the same training and inference methodology as mentioned in
+[Ultralytics](https://github.com/ultralytics/ultralytics)
+
+
+## Model Details
+
+Model architecture:
+
+We have the following YOLOv5 models enhanced with attention mechanisms:
+* yolov5s_custom_cbam_1 : YOLOv5 enhanced with the Convolutional Block Attention Module (CBAM) following [model-1](#) architecure
+* yolov5s_custom_cbam_2 : YOLOv5 enhanced with the Convolutional Block Attention Module (CBAM) 
+  
+Patch-wise Attention Model
+Focus: Specifically targets areas with potential defects.
+Performance: Provides results comparable to the baseline and excels in specific scenarios.
+

@@ -20,7 +20,7 @@ The models are trained to identify and classify subtle and camouflaged defects w
 Defect detection is crucial for maintaining safety and quality in industries such as
 aerospace, automotive, and construction. Traditional methods often fail to identify
 subtle and camouflaged defects. This thesis explores the use of the YOLOv5 object
-detection model, enhanced with the Convolutional Block Attention Module (CBAM),
+detection model, enhanced with the Convolutional Block Attention Module (CBAM), [Model-1 architecture](#model-1),
 to improve the detection of these concealed defects. YOLOv5 with CBAM boosts the
 model’s precision and focus, resulting in more accurate detection of subtle defects,
 specifically in MPI materials.
